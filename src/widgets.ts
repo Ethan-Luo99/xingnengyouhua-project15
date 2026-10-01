@@ -5,7 +5,7 @@ export interface WidgetConfig {
   mountSelector: string
   type: WidgetType
   title: string
-  data: number[]
+  data: readonly number[]
 }
 
 export const WIDGET_COUNT = 500
@@ -55,7 +55,7 @@ export function getWidgetConfigs(): WidgetConfig[] {
       title: `${TITLE_PREFIXES[i % TITLE_PREFIXES.length]} ${
         TITLE_SUFFIXES[Math.floor(i / TITLE_PREFIXES.length) % TITLE_SUFFIXES.length]
       } #${i}`,
-      data: seedSeries(i),
+      data: Object.freeze(seedSeries(i)),
     })
   }
   cachedConfigs = configs

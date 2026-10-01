@@ -3,6 +3,6 @@ import { initAllWidgets } from './bootstrap'
 import { attachMetricsRecalc } from './metrics'
 
 window.addEventListener('load', () => {
-  initAllWidgets()
-  attachMetricsRecalc()
+  const mounted = initAllWidgets()
+  attachMetricsRecalc(mounted)
 })

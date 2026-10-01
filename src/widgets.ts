@@ -5,7 +5,7 @@ export interface WidgetConfig {
   mountSelector: string
   type: WidgetType
   title: string
-  data: number[]
+  data: readonly number[]
 }
 
 export const WIDGET_COUNT = 500
@@ -69,5 +69,5 @@ function seedSeries(seed: number): number[] {
     value = (value * 1103515245 + 12345 + seed * 31) % 2147483647
     series.push(Math.abs(value % 100))
   }
-  return series
+  return Object.freeze(series) as number[]
 }

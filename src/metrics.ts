@@ -1,42 +1,68 @@
 import { getWidgetConfigs } from './widgets'
 
-export function attachMetricsRecalc(): void {
-  window.addEventListener(
-    'scroll',
-    () => {
-      recomputeAllMetrics()
-    },
-    { passive: true },
-  )
+const ROWS_PER_CHUNK = 64
+
+export function attachMetricsRecalc(mounted: Promise<void>): void {
+  const ready = Promise.all([mounted, computeTotalsAsync()])
+
+  let pending = true
+  const flush = (): void => {
+    if (!pending) {
+      return
+    }
+    pending = false
+    void ready.then(applyMetricTexts)
+  }
+
+  flush()
+
+  window.addEventListener('scroll', flush, { passive: true })
 }
 
-export function recomputeAllMetrics(): void {
+function computeTotalsAsync(): Promise<Float64Array> {
   const widgets = getWidgetConfigs()
-  const totals = new Map<string, number>()
-
-  for (const a of widgets) {
-    let total = 0
-    for (const b of widgets) {
-      total += pairwiseDistance(a.data, b.data)
+  for (const w of widgets) {
+    if (!Object.isFrozen(w.data)) {
+      throw new Error(`widget ${w.id} data series must be immutable after mount`)
     }
-    totals.set(a.id, total)
   }
 
-  for (const w of widgets) {
-    const host = document.querySelector<HTMLElement>(w.mountSelector)
-    if (!host) {
-      continue
+  const totals = new Float64Array(widgets.length)
+  return new Promise<Float64Array>((resolve) => {
+    let row = 0
+    const step = (): void => {
+      const end = Math.min(row + ROWS_PER_CHUNK, widgets.length)
+      for (; row < end; row++) {
+        const a = widgets[row].data
+        let total = 0
+        for (const w of widgets) {
+          total += pairwiseDistance(a, w.data)
+        }
+        totals[row] = total
+      }
+      if (row < widgets.length) {
+        requestAnimationFrame(step)
+      } else {
+        resolve(totals)
+      }
     }
-    const metricEl = host.querySelector<HTMLElement>('.metric')
+    step()
+  })
+}
+
+function applyMetricTexts(results: [void, Float64Array]): void {
+  const totals = results[1]
+  const widgets = getWidgetConfigs()
+  for (let i = 0; i < widgets.length; i++) {
+    const host = document.querySelector<HTMLElement>(widgets[i].mountSelector)
+    const metricEl = host?.querySelector<HTMLElement>('.metric')
     if (metricEl) {
-      metricEl.textContent = totals.get(w.id)!.toFixed(0)
+      metricEl.textContent = totals[i].toFixed(0)
     }
-    const measured = host.getBoundingClientRect().height
-    host.style.setProperty('--slot-min-h', `${measured}px`)
   }
 }
 
-function pairwiseDistance(a: number[], b: number[]): number {
+function pairwiseDistance(a: readonly number[], b: readonly number[]): number {
   const n = Math.min(a.length, b.length)
   let sum = 0
   for (let i = 0; i < n; i++) {

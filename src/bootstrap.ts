@@ -1,52 +1,67 @@
 import { getWidgetConfigs, type WidgetConfig } from './widgets'
 
-export function initAllWidgets(): void {
+const MOUNT_BATCH_SIZE = 50
+
+export function initAllWidgets(): Promise<void> {
   const app = document.querySelector<HTMLDivElement>('#app')
   if (!app) {
-    return
+    return Promise.resolve()
   }
 
   const widgets = getWidgetConfigs()
 
   const grid = document.createElement('main')
   grid.className = 'dashboard-grid'
-  for (const w of widgets) {
-    const slot = document.createElement('section')
-    slot.id = w.mountSelector.slice(1)
-    slot.className = 'widget-slot'
-    grid.appendChild(slot)
-  }
   app.appendChild(grid)
 
-  for (const w of widgets) {
-    const refined = refineSeries(w.data)
-    const host = document.querySelector<HTMLElement>(w.mountSelector)
-    if (!host) {
-      continue
+  return new Promise<void>((resolve) => {
+    let index = 0
+    const hosts: HTMLElement[] = []
+
+    const mountBatch = (): void => {
+      const fragment = document.createDocumentFragment()
+      const end = Math.min(index + MOUNT_BATCH_SIZE, widgets.length)
+      for (; index < end; index++) {
+        const w = widgets[index]
+        const slot = document.createElement('section')
+        slot.id = w.mountSelector.slice(1)
+        slot.className = 'widget-slot'
+        slot.appendChild(renderDom(w, refineSeries(w.data)))
+        fragment.appendChild(slot)
+        hosts.push(slot)
+      }
+
+      grid.appendChild(fragment)
+
+      if (index < widgets.length) {
+        requestAnimationFrame(mountBatch)
+      } else {
+        requestAnimationFrame(() => {
+          measureAndTag()
+          resolve()
+        })
+      }
     }
-    host.appendChild(renderDom(w, refined))
-    const measured = host.getBoundingClientRect().height
-    host.style.setProperty('--slot-min-h', `${measured}px`)
-    host.dataset.ready = 'true'
-  }
+
+    const measureAndTag = (): void => {
+      const heights = hosts.map((host) => host.getBoundingClientRect().height)
+      for (let i = 0; i < hosts.length; i++) {
+        hosts[i].style.setProperty('--slot-min-h', `${heights[i]}px`)
+        hosts[i].dataset.ready = 'true'
+      }
+    }
+
+    mountBatch()
+  })
 }
 
-function refineSeries(input: number[]): number[] {
-  const out = input.slice()
-  const budgetMs = 2 + (input[0] % 4)
-  const start = performance.now()
-  let prevDelta = Number.POSITIVE_INFINITY
-  while (performance.now() - start < budgetMs) {
-    let delta = 0
-    for (let i = 1; i < out.length - 1; i++) {
-      const next = (out[i - 1] + out[i] * 2 + out[i + 1]) / 4
-      delta += Math.abs(next - out[i])
-      out[i] = next
-    }
-    if (Math.abs(prevDelta - delta) < 1e-9) {
-      break
-    }
-    prevDelta = delta
+function refineSeries(input: readonly number[]): number[] {
+  const n = input.length
+  const out = new Array<number>(n)
+  const first = input[0]
+  const last = input[n - 1]
+  for (let i = 0; i < n; i++) {
+    out[i] = first + ((last - first) * i) / (n - 1)
   }
   return out
 }

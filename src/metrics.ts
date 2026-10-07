@@ -3,9 +3,19 @@ import { allWidgetsMounted, getWidgetHost } from './bootstrap'
 
 const CHUNK_BUDGET_MS = 12
 
-let totals: number[] | null = null
+let cachedTotals: number[] | null = null
 let metricEls: (HTMLElement | null)[] | null = null
 let applyScheduled = false
+
+// 指标缓存就绪后 resolve；交互模块据此启用排序并读取缓存值，不触发任何重算。
+export const metricsReady = new Promise<void>((resolve) => {
+  resolveMetricsReady = resolve
+})
+let resolveMetricsReady: () => void = () => {}
+
+export function getMetricValue(index: number): number | null {
+  return cachedTotals ? cachedTotals[index] : null
+}
 
 export function attachMetricsRecalc(): void {
   window.addEventListener(
@@ -18,6 +28,9 @@ export function attachMetricsRecalc(): void {
   )
   // 数据挂载后不可变，totals 只需算一次：分帧增量计算，完成后统一上屏。
   void computeTotalsIncremental()
+    .then(() => {
+      resolveMetricsReady()
+    })
     .then(() => allWidgetsMounted)
     .then(() => {
       scheduleApply()
@@ -25,7 +38,7 @@ export function attachMetricsRecalc(): void {
 }
 
 function scheduleApply(): void {
-  if (!totals || applyScheduled) {
+  if (!cachedTotals || applyScheduled) {
     return
   }
   applyScheduled = true
@@ -36,7 +49,7 @@ function scheduleApply(): void {
 }
 
 function applyTotals(): void {
-  if (!totals) {
+  if (!cachedTotals) {
     return
   }
   const widgets = getWidgetConfigs()
@@ -48,7 +61,7 @@ function applyTotals(): void {
   for (let i = 0; i < widgets.length; i++) {
     const el = metricEls[i]
     if (el) {
-      el.textContent = totals[i].toFixed(0)
+      el.textContent = cachedTotals[i].toFixed(0)
     }
   }
 }
@@ -74,7 +87,7 @@ function computeTotalsIncremental(): Promise<void> {
       if (row < widgets.length) {
         requestAnimationFrame(step)
       } else {
-        totals = Array.from(acc)
+        cachedTotals = Array.from(acc)
         resolve()
       }
     }

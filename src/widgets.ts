@@ -12,7 +12,7 @@ export const WIDGET_COUNT = 500
 
 const SERIES_LENGTH = 48
 
-const WIDGET_TYPES: WidgetType[] = ['stat', 'chart', 'table', 'list']
+export const WIDGET_TYPES: WidgetType[] = ['stat', 'chart', 'table', 'list']
 
 const TITLE_PREFIXES = [
   'CPU',

@@ -7,6 +7,16 @@ let totals: number[] | null = null
 let metricEls: (HTMLElement | null)[] | null = null
 let applyScheduled = false
 
+let resolveTotalsReady: () => void = () => {}
+
+export const totalsReady = new Promise<void>((resolve) => {
+  resolveTotalsReady = resolve
+})
+
+export function getTotals(): readonly number[] | null {
+  return totals
+}
+
 export function attachMetricsRecalc(): void {
   window.addEventListener(
     'scroll',
@@ -75,6 +85,7 @@ function computeTotalsIncremental(): Promise<void> {
         requestAnimationFrame(step)
       } else {
         totals = Array.from(acc)
+        resolveTotalsReady()
         resolve()
       }
     }

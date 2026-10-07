@@ -117,3 +117,110 @@ body {
   font-size: 12px;
   color: #9aa3b8;
 }
+
+.controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 24px 0;
+}
+
+.control-group {
+  display: flex;
+  gap: 6px;
+}
+
+.control-btn {
+  font: inherit;
+  font-size: 12px;
+  color: #c6cbda;
+  background: #171a21;
+  border: 1px solid #262a34;
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+
+.control-btn:hover:not(:disabled) {
+  border-color: #3a4258;
+}
+
+.control-btn.is-active {
+  color: #0f1115;
+  background: #5b95ff;
+  border-color: #5b95ff;
+}
+
+.control-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.widget-slot.is-hidden {
+  display: none;
+}
+
+.widget-card {
+  cursor: pointer;
+}
+
+.detail-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 300px;
+  box-sizing: border-box;
+  padding: 20px;
+  background: #14161c;
+  border-left: 1px solid #262a34;
+  transform: translateX(100%);
+  transition: transform 0.18s ease-out;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.detail-panel.is-open {
+  transform: translateX(0);
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.detail-header h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.detail-close {
+  font: inherit;
+  font-size: 16px;
+  color: #9aa3b8;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.detail-type,
+.detail-metric {
+  font-size: 12px;
+  color: #9aa3b8;
+  margin: 10px 0 0;
+}
+
+.detail-data {
+  margin: 14px 0 0;
+  padding-left: 22px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  color: #c6cbda;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 16px;
+}
